@@ -1,5 +1,28 @@
 const {BookingService}=require("../services/index");
 const bookingService=new BookingService();
+const {createChannel,publishMessage}=require("../utils/messageQueue");
+const {REMINDER_BINDING_KEY}=require("../config/serverConfig")
+
+
+const sendMessageToQueue=async(req,res)=>{
+    try{
+        const channel=await createChannel();
+        const data = {message: 'Success'};
+        publishMessage(channel, REMINDER_BINDING_KEY, JSON.stringify(data));
+        return res.status(200).json({
+            message: 'Succesfully published the event'
+        });
+
+    }
+    catch(err){
+        console.log(err);
+        return res.status(500).json({
+            data:{},
+            message:"Cannot send message to queue",
+            err:err
+        })
+    }
+}
 
 const create=async(req,res)=>{
     try{
@@ -52,5 +75,6 @@ const update=async(req,res)=>{
 }
 module.exports={
     create,
-    update
+    update,
+    sendMessageToQueue
 }

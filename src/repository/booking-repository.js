@@ -2,6 +2,7 @@ const {Booking}=require("../models/index");
 const {StatusCode}=require("http-status-code");
 const {ValidationError, AppError}=require("../utils/error/index")
 
+
 class BookingRepository{
     async create(data){
         try{
