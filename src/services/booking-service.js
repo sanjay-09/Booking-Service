@@ -1,6 +1,10 @@
 const {Flight_Service_BASE_URL}=require("../config/serverConfig");
 const {BookingRepository}=require("../repository/index");
 const {ServiceError}=require("../utils/error/index")
+const {createChannel,publishMessage}=require("../utils/messageQueue");
+const {REMINDER_BINDING_KEY}=require("../config/serverConfig");
+const {AppError}=require("../utils/error/index")
+
 const axios=require("axios");
 class BookingService{
 
@@ -8,49 +12,78 @@ class BookingService{
         this.bookRepository=new BookingRepository();
     }
     async create(data){
-        
         try{
+            await sequelize.tranactions(async(t)=>{
+            //to check their is seat in the flight or not
+            const getFlightRequestURL=`${Flight_Service_BASE_URL}/api/v1/flight/${data.flightId}`;
+            const response=await axios.get(getFlightRequestURL);
+            const flightData=response.data.data;
+            if(data.noOfSeats>flightData.totalSeats){
+                throw new ServiceError("Cannot proceed with the booking","Insufficient Seats")
+            }
+
            
-        const flightId=data.flightId;
-        const getFlightRequestURL=`${Flight_Service_BASE_URL}/api/v1/flight/${flightId}`;
-        //getting the flight data
-        const response=await axios.get(getFlightRequestURL);
-        const flightData=response.data.data;
-        const price=flightData.price;
-        if(data.noOfSeats>flightData.totalSeats){
-            throw new ServiceError("Cannot proceed with the booking","Insufficient Seats")
+             //check if particular seat is avaiable or not
+             const getSeatRequestURL=`${Flight_Service_BASE_URL}/api/v1/seat/?flightId=${data.flightId}&seatNumber=${data.seatNumber}`;
+             const seatAvaiable=await axios.get(getSeatRequestURL);
+             if(!seatAvaiable.data.data){
+                     throw new Error("seat is reserved")
+             }
+             //blocks for 10 min and unblocking will happen if that particular seat is not booked
+             const updateSeatRequestURL=`${Flight_Service_BASE_URL}/api/v1/seat`;
+                   await axios.patch(updateSeatRequestURL,{
+                           flightId:data.flightId,
+                             seatNumber:data.seatNumber
+                             
+            })
+            
+
+               const price=flightData.price;
+               const totalCost=price*data.noOfSeats;
+               const bookingPayload={...data,totalCost};
+               //booking create
+               const booking=await this.bookRepository.create(bookingPayload);
+
+               //after booking updating the flight data
+                const updateFlightRequestURL=`${Flight_Service_BASE_URL}/api/v1/flightUpdate/${data.flightId}`;
+                const updatedTotalSeats=flightData.totalSeats-data.noOfSeats;
+                await axios.patch(updateFlightRequestURL,{
+                     totalSeats:updatedTotalSeats
+
+                 })
+                 const finalBooking=await this.bookRepository.updateStatus(booking.id,{status:"Completed"});
+                 const statusUpdateRequestURL=`${Flight_Service_BASE_URL}/api/v1/status`;
+                 await axios.patch(statusUpdateRequestURL,{
+                     flightId:data.flightId,
+                     seatNumber:data.seatNumber
+                 })
+             const datas={
+            email:data.email,
+            userId:data.userId,
+            totalSeats:data.noOfSeats,
+            flightId:data.flightId,
+            price:data.price
         }
-        const totalCost=price*data.noOfSeats;
-        const bookingPayload={...data,totalCost};
-        console.log(bookingPayload);
-        const booking=await this.bookRepository.create(bookingPayload);
+        this.publisher(datas)
+         
+            })
+            return true;
 
-
-        //after booking updating the flight data
-        const updateFlightRequestURL=`${Flight_Service_BASE_URL}/api/v1/flightUpdate/${flightId}`;
-        const updatedTotalSeats=flightData.totalSeats-data.noOfSeats;
-        console.log(updateFlightRequestURL);
-
-        await axios.patch(updateFlightRequestURL,{
-            totalSeats:updatedTotalSeats
-
-        })
-        const finalBooking=await this.bookRepository.updateStatus(booking.id,{status:"Completed"});
-        
-    
-        return finalBooking;
 
         }
         catch(err){
-            console.log(err);
-            if(err.name=="Repository Error"||err.name==="Validation Error"){
-                throw err;
-            }
-           
-            throw new ServiceError();
-
+            throw err.message;
         }
-        
+    }
+    async publisher(data){
+        try{
+            const channel=await createChannel();
+        publishMessage(channel,REMINDER_BINDING_KEY,JSON.stringify(data));
+        }
+        catch(err){
+            throw err;
+        }
+
     }
     async update(data){
         try{

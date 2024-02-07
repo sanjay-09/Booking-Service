@@ -26,8 +26,8 @@ const sendMessageToQueue=async(req,res)=>{
 
 const create=async(req,res)=>{
     try{
-        console.log("create");
-        console.log(req.body);
+        
+       
         const response=await bookingService.create(req.body);
         return res.status(200).json({
             data:response,
@@ -40,11 +40,12 @@ const create=async(req,res)=>{
 
     }
     catch(err){
-             return res.status(err.statusCode).json({
+      
+             return res.status(500).json({
                 data:{},
                 success:false,
-                message:err.message,
-                err:err.explanation
+                message:"Not able to create the city",
+                err:err
              })
     }
 }

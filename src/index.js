@@ -8,7 +8,7 @@ const appRouter=require("./Routes/index")
 const setupAndStartServer=()=>{
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({extended:true}));
-    
+   
 
     app.use("/bookingService/api",appRouter)
     
