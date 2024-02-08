@@ -2,6 +2,7 @@ const {BookingService}=require("../services/index");
 const bookingService=new BookingService();
 const {createChannel,publishMessage}=require("../utils/messageQueue");
 const {REMINDER_BINDING_KEY}=require("../config/serverConfig")
+const PaymentGateway=require("../services/payment-service");
 
 
 const sendMessageToQueue=async(req,res)=>{
@@ -27,7 +28,7 @@ const sendMessageToQueue=async(req,res)=>{
 const create=async(req,res)=>{
     try{
         
-       
+       console.log(req.body);
         const response=await bookingService.create(req.body);
         return res.status(200).json({
             data:response,
@@ -74,8 +75,71 @@ const update=async(req,res)=>{
         })
     }
 }
+const customerCreate=async(req,res)=>{
+    try{
+        const response=await PaymentGateway.createNewCustomer(req.body);
+        return res.status(200).json({
+            data:response,
+            success:true,
+            message:"Created the user",
+            err:{}
+        })
+
+    }
+    catch(err){
+        return res.status(500).json({
+            data:{},
+            success:false,
+            message:"Cannot create the user",
+            err:err
+        })
+    }
+}
+const cardCreate=async(req,res)=>{
+    try{
+        const response=await PaymentGateway.addNewCard(req.body);
+        return res.status(200).json({
+            data:response,
+            success:true,
+            message:"Created the card and add to the customer",
+            err:{}
+        })
+
+    }
+    catch(err){
+        return res.status(500).json({
+            data:{},
+            success:false,
+            message:"Cannot create the card",
+            err:err
+        })
+    }
+}
+const createCharges=async(req,res)=>{
+    try{
+        const response=await PaymentGateway.createCharges(req.body);
+        return res.status(200).json({
+            data:response,
+            success:true,
+            message:"Payment is successfully done",
+            err:{}
+        })
+
+    }
+    catch(err){
+        return res.status(500).json({
+            data:{},
+            success:false,
+            message:"Payment can not be made",
+            err:{err}
+        })
+    }
+}
 module.exports={
     create,
     update,
-    sendMessageToQueue
+    sendMessageToQueue,
+    customerCreate,
+    cardCreate,
+    createCharges
 }

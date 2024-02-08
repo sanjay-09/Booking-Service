@@ -10,6 +10,9 @@ router.get("/home",(req,res)=>{
 })
 router.post("/create",bookingController.create);
 router.post("/publish",bookingController.sendMessageToQueue);
+router.post("/paymentAcc",bookingController.customerCreate);
+router.post("/paymentAccCard",bookingController.cardCreate);
+router.post("/payment",bookingController.createCharges);
 
 router.patch("/update",bookingController.update);
 

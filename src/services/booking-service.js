@@ -4,6 +4,8 @@ const {ServiceError}=require("../utils/error/index")
 const {createChannel,publishMessage}=require("../utils/messageQueue");
 const {REMINDER_BINDING_KEY}=require("../config/serverConfig");
 const {AppError}=require("../utils/error/index")
+const {sequelize}=require("../models/index")
+const PaymentService=require("./payment-service")
 
 const axios=require("axios");
 class BookingService{
@@ -13,7 +15,7 @@ class BookingService{
     }
     async create(data){
         try{
-            await sequelize.tranactions(async(t)=>{
+            await sequelize.transaction(async(t)=>{
             //to check their is seat in the flight or not
             const getFlightRequestURL=`${Flight_Service_BASE_URL}/api/v1/flight/${data.flightId}`;
             const response=await axios.get(getFlightRequestURL);
@@ -25,7 +27,7 @@ class BookingService{
            
              //check if particular seat is avaiable or not
              const getSeatRequestURL=`${Flight_Service_BASE_URL}/api/v1/seat/?flightId=${data.flightId}&seatNumber=${data.seatNumber}`;
-             const seatAvaiable=await axios.get(getSeatRequestURL);
+             const seatAvaiable=await axios.get(getSeatRequestURL, {transaction: t });
              if(!seatAvaiable.data.data){
                      throw new Error("seat is reserved")
              }
@@ -35,7 +37,7 @@ class BookingService{
                            flightId:data.flightId,
                              seatNumber:data.seatNumber
                              
-            })
+            }, {transaction: t })
             
 
                const price=flightData.price;
@@ -44,6 +46,12 @@ class BookingService{
                //booking create
                const booking=await this.bookRepository.create(bookingPayload);
 
+
+               //payment 
+
+               const paymentSuccessfull=await PaymentService.createCharges({totalCost,customer_Id:data.customer_Id});
+               
+
                //after booking updating the flight data
                 const updateFlightRequestURL=`${Flight_Service_BASE_URL}/api/v1/flightUpdate/${data.flightId}`;
                 const updatedTotalSeats=flightData.totalSeats-data.noOfSeats;
@@ -51,6 +59,7 @@ class BookingService{
                      totalSeats:updatedTotalSeats
 
                  })
+
                  const finalBooking=await this.bookRepository.updateStatus(booking.id,{status:"Completed"});
                  const statusUpdateRequestURL=`${Flight_Service_BASE_URL}/api/v1/status`;
                  await axios.patch(statusUpdateRequestURL,{
@@ -101,7 +110,7 @@ class BookingService{
            
 
            
-            const response=await this.bookRepository.updateBooking(bookingId,{totalCost,noOfSeats:totalSeats});
+            const response=await this.bookRepository.updateBooking(bookingId,{totalCost,noOfSeats:totalSeats},  { transaction: t });
 
 
             const getFlightRequest=`${Flight_Service_BASE_URL}/api/v1/flight/${bookingDetail.flightId}`;
