@@ -14,8 +14,8 @@
     "dialect": "mysql"
   },
   "production": {
-    "username": "admin1",
-    "password": "7HcaOfs1neXP5B4zowLR",
+    "username": "admin",
+    "password": "BTwVp64fdHKnamNq9YWG",
     "database": "BookingDB_production",
     "host": "database-1.cnummkieapr3.eu-north-1.rds.amazonaws.com",
     "dialect": "mysql"

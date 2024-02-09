@@ -1,4 +1,4 @@
-const {Flight_Service_BASE_URL}=require("../config/serverConfig");
+const {Flight_Service_BASE_URL,AUTH_SERVICE_PATH}=require("../config/serverConfig");
 const {BookingRepository}=require("../repository/index");
 const {ServiceError}=require("../utils/error/index")
 const {createChannel,publishMessage}=require("../utils/messageQueue");
@@ -66,8 +66,11 @@ class BookingService{
                      flightId:data.flightId,
                      seatNumber:data.seatNumber
                  })
+                
+                 const UserEmail=await axios.get(`${AUTH_SERVICE_PATH}/api/v1/user/${data.userId}`);
+               
              const datas={
-            email:data.email,
+            email:UserEmail.data.data.email,
             userId:data.userId,
             totalSeats:data.noOfSeats,
             flightId:data.flightId,
@@ -81,6 +84,7 @@ class BookingService{
 
         }
         catch(err){
+            console.log(err);
             throw err.message;
         }
     }

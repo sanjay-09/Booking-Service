@@ -9,7 +9,7 @@ class BookingRepository{
            
             
             const booking=await Booking.create(data);
-            console.log(booking);
+          
           
             return booking;
 

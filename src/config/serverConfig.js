@@ -6,5 +6,7 @@ module.exports={
     MESSAGE_BROKER_URL: process.env.MESSAGE_BROKER_URL,
     EXCHANGE_NAME: process.env.EXCHANGE_NAME,
     REMINDER_BINDING_KEY: process.env.REMINDER_BINDING_KEY,
-    SECRET_KEY:process.env.Secret_Key
+    SECRET_KEY:process.env.Secret_Key,
+    AUTH_SERVICE_PATH:process.env.AUTH_SERVICE_PATH
+
 }
