@@ -5,7 +5,9 @@ const {createChannel,publishMessage}=require("../utils/messageQueue");
 const {REMINDER_BINDING_KEY}=require("../config/serverConfig");
 const {AppError}=require("../utils/error/index")
 const {sequelize}=require("../models/index")
-const PaymentService=require("./payment-service")
+const PaymentService=require("./payment-service");
+const Redis = require('ioredis');
+const redis = new Redis();
 
 const axios=require("axios");
 class BookingService{
@@ -15,7 +17,19 @@ class BookingService{
     }
     async create(data){
         try{
-            await sequelize.transaction(async(t)=>{
+            const key = `flight:${data.flightId}:seat:${data.seatNumber}`;
+            const seatExists = await redis.exists(key);
+            console.log(seatExists);
+            if(!seatExists){
+                const isAvailable = await redis.setnx(key, 1);
+                console.log(`Seat ${data.seatNumber} reserved successfully for Flight ${data.flightId}`);
+                await redis.expire(key, 600);
+            }
+            else{
+                return "Seat is not available";
+
+            }
+
             //to check their is seat in the flight or not
             const getFlightRequestURL=`${Flight_Service_BASE_URL}/api/v1/flight/${data.flightId}`;
             const response=await axios.get(getFlightRequestURL);
@@ -27,17 +41,11 @@ class BookingService{
            
              //check if particular seat is avaiable or not
              const getSeatRequestURL=`${Flight_Service_BASE_URL}/api/v1/seat/?flightId=${data.flightId}&seatNumber=${data.seatNumber}`;
-             const seatAvaiable=await axios.get(getSeatRequestURL, {transaction: t });
+             const seatAvaiable=await axios.get(getSeatRequestURL);
+
              if(!seatAvaiable.data.data){
                      throw new Error("seat is reserved")
              }
-             //blocks for 10 min and unblocking will happen if that particular seat is not booked
-             const updateSeatRequestURL=`${Flight_Service_BASE_URL}/api/v1/seat`;
-                   await axios.patch(updateSeatRequestURL,{
-                           flightId:data.flightId,
-                             seatNumber:data.seatNumber
-                             
-            }, {transaction: t })
             
 
                const price=flightData.price;
@@ -78,14 +86,14 @@ class BookingService{
         }
         this.publisher(datas)
          
-            })
+            
             return true;
 
 
         }
         catch(err){
-            console.log(err);
-            throw err.message;
+           
+            throw err;
         }
     }
     async publisher(data){
@@ -114,7 +122,7 @@ class BookingService{
            
 
            
-            const response=await this.bookRepository.updateBooking(bookingId,{totalCost,noOfSeats:totalSeats},  { transaction: t });
+            const response=await this.bookRepository.updateBooking(bookingId,{totalCost,noOfSeats:totalSeats});
 
 
             const getFlightRequest=`${Flight_Service_BASE_URL}/api/v1/flight/${bookingDetail.flightId}`;

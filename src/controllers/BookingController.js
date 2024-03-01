@@ -30,6 +30,7 @@ const create=async(req,res)=>{
         
        console.log(req.body);
         const response=await bookingService.create(req.body);
+        console.log("after controller");
         return res.status(200).json({
             data:response,
             success:true,
@@ -45,8 +46,8 @@ const create=async(req,res)=>{
              return res.status(500).json({
                 data:{},
                 success:false,
-                message:"Not able to create the city",
-                err:err
+                message:"Not able to proceed with booking",
+                err:err.message
              })
     }
 }
