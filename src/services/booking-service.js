@@ -2,12 +2,17 @@ const {Flight_Service_BASE_URL,AUTH_SERVICE_PATH}=require("../config/serverConfi
 const {BookingRepository}=require("../repository/index");
 const {ServiceError}=require("../utils/error/index")
 const {createChannel,publishMessage}=require("../utils/messageQueue");
-const {REMINDER_BINDING_KEY}=require("../config/serverConfig");
+const {REMINDER_BINDING_KEY,REDIS_URL}=require("../config/serverConfig");
 const {AppError}=require("../utils/error/index")
 const {sequelize}=require("../models/index")
 const PaymentService=require("./payment-service");
+
 const Redis = require('ioredis');
-const redis = new Redis();
+const redis = Redis.createClient({
+    host:REDIS_URL,
+    port: 6379, // Default Redis port
+    // Optionally, you can also specify other options such as password
+  });
 
 const axios=require("axios");
 class BookingService{

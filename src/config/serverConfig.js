@@ -7,6 +7,7 @@ module.exports={
     EXCHANGE_NAME: process.env.EXCHANGE_NAME,
     REMINDER_BINDING_KEY: process.env.REMINDER_BINDING_KEY,
     SECRET_KEY:process.env.Secret_Key,
-    AUTH_SERVICE_PATH:process.env.AUTH_SERVICE_PATH
+    AUTH_SERVICE_PATH:process.env.AUTH_SERVICE_PATH,
+    REDIS_URL:process.env.REDIS_URL
 
 }
