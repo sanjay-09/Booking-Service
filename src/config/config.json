@@ -15,9 +15,9 @@
   },
   "production": {
     "username": "admin",
-    "password": "BTwVp64fdHKnamNq9YWG",
-    "database": "BookingDB_production",
-    "host": "database-1.cnummkieapr3.eu-north-1.rds.amazonaws.com",
+    "password": "NlTGeDKhzuLWwB4ORIZZ",
+    "database": "bookingdb_production",
+    "host": "db-prod-airpulse.cbmmgc62sg1u.eu-north-1.rds.amazonaws.com",
     "dialect": "mysql"
   }
 }
